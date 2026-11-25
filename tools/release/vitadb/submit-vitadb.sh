@@ -5,8 +5,8 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 LOGIN=$(gh api user --jq .login)
-gh release view v0.9 --repo "$LOGIN/gitsfa-vita" >/dev/null 2>&1 \
-  || { echo "github.com/$LOGIN/gitsfa-vita has no v0.9 release yet: run ../github/publish.sh first"; exit 1; }
+gh release view v1.0 --repo "$LOGIN/gitsfa-vita" >/dev/null 2>&1 \
+  || { echo "github.com/$LOGIN/gitsfa-vita has no v1.0 release yet: run ../github/publish.sh first"; exit 1; }
 BODY=$(sed "s#OWNER#$LOGIN#g" "$HERE/issue.md")
 TITLE="[NEW] Ghost in the Shell: First Assault"
 printf '%s\n\n%s\n\n' "$TITLE" "$BODY"

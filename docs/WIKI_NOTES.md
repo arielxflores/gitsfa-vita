@@ -1355,3 +1355,9 @@ Rule: only content whose models / textures / sounds are in the user's own instal
 - gitsfa-nettest.sh: netroom.txt is moved to the trash before each launch (the code is the same every launch, so
   comparing with the old file made round 2 see "nothing to join"). Dry run with the stand-in client, the fake router and
   a 9 s load on the "Vita": both rounds played to the end (round 2: 80 ms later, 30 ms jitter, 3 % lost).
+- The fresh Windows run of the fixed data builder package (b122-db zip, a new folder): "check against known_good.sha256:
+  594 of 594 files ok (594 identical to the reference build)", 856 MB in 66 min, the intro drawn in 837 s.
+- Internet test b123-net3 on the user's Vita: both rounds played to the end, joined by the Vita's Wi-Fi address (the room
+  code's way is not turned around by their router from inside; UPnP opened port 47750). Round 1: 3826 snapshots in
+  128 s, 0 lost, round trip median 26 ms; round 2 (80 ms, 30 ms jitter, 3 % lost, 0.5 s cuts): 264 of 3928 lost, median
+  216 ms, played on. Host: 29.9 snapshots a second, network code 0.13 ms a frame, 59.7-59.8 fps average, no crash dump.

@@ -1,13 +1,13 @@
 #!/bin/bash
 # Puts the Vita port of Ghost in the Shell: First Assault on your GitHub account: creates the public repository
-# gitsfa-vita from gitsfa-vita-source.tar.gz (the source WITHOUT any game data), and publishes release v0.9 with
+# gitsfa-vita from gitsfa-vita-source.tar.gz (the source WITHOUT any game data), and publishes release v1.0 with
 # GITSFA-Vita.vpk, the data builder's zip and the screenshots.
 # Usage, in WSL (Ubuntu), from this folder:   bash publish.sh
 # It asks before creating anything, and stops if the repository already exists.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO=gitsfa-vita
-TAG=v0.9
+TAG=v1.0
 DEST="$HOME/$REPO"
 VPK="$HERE/../GITSFA-Vita.vpk"
 ZIP="$HERE/../GITSFA-Vita-DataBuilder-win64.zip"
@@ -57,7 +57,7 @@ cd "$DEST"
 git init -q -b main
 git config user.name "$LOGIN"; git config user.email "$ID+$LOGIN@users.noreply.github.com"
 git add -A
-git commit -q -m "Ghost in the Shell: First Assault for PS Vita, public test 0.9 (build 123)
+git commit -q -m "Ghost in the Shell: First Assault for PS Vita, 1.0 (build 123)
 
 The port's source: the engine (engine/), the data builder and its converters (tools/, vm/), the development log (docs/).
 No game data.
@@ -71,7 +71,7 @@ gh repo edit "$LOGIN/$REPO" --add-topic ps-vita --add-topic psvita --add-topic v
   --add-topic ghost-in-the-shell >/dev/null || echo "(couldn't set the topics; not important)"
 echo "== publishing release $TAG"
 gh release create "$TAG" "$VPK" "$ZIP" "$HERE"/screenshots/*.jpg --repo "$LOGIN/$REPO" --target main \
-  --title "0.9 (public test)" --notes-file "$HERE/release-notes.md"
+  --title "1.0" --notes-file "$HERE/release-notes.md"
 echo
 echo "== done: https://github.com/$LOGIN/$REPO"
 echo "Next, for VitaDB:  cd ../vitadb && bash submit-vitadb.sh"

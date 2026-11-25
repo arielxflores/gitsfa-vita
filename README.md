@@ -7,7 +7,7 @@ content offline, with bots, and with other Vitas over ad-hoc, Wi-Fi or the inter
 **The game's data is not here and is not in the download.** You make it on your own PC from your own copy of the PC
 game with the data builder (below). No code of the original game is used: the executable is not opened, patched or run.
 
-This is a **public test (0.9)**. It has been played on one PS Vita. Multiplayer has only been tested with one Vita and
+This is version **1.0**, the first release. It has been played on one PS Vita. Multiplayer has only been tested with one Vita and
 a computer playing the second player, so please expect problems there and report them.
 
 ## What is in it
