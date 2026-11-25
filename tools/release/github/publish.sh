@@ -53,7 +53,8 @@ read -r -p "Go ahead? [y/N] " ok
 [[ "$ok" == [yY] ]] || { echo "stopped, nothing was published"; exit 0; }
 
 mkdir -p "$DEST"; tar xzf "$SRC" -C "$DEST" --strip-components=1
-mkdir -p "$DEST/docs/screenshots"; cp "$HERE"/screenshots/*.jpg "$DEST/docs/screenshots/"   # (the README shows them; your own pictures from the Vita)
+mkdir -p "$DEST/docs/screenshots"   # (the pictures the README shows; your own from the Vita)
+for f in $(grep -o 'docs/screenshots/[A-Za-z0-9._-]*\.jpg' "$DEST/README.md" | sort -u); do cp "$HERE/screenshots/${f##*/}" "$DEST/$f"; done
 cd "$DEST"
 git init -q -b main
 git config user.name "$LOGIN"; git config user.email "$ID+$LOGIN@users.noreply.github.com"

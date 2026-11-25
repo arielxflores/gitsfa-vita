@@ -18,12 +18,10 @@ Taken on a PS Vita (the line at the top left of the match pictures is from the a
 |---|---|
 | ![Title screen](docs/screenshots/1-title.jpg) | ![Main menu](docs/screenshots/2-menu.jpg) |
 | Title screen | Main menu |
-| ![Team Deathmatch on Urban](docs/screenshots/3-urban.jpg) | ![Team Deathmatch on Urban](docs/screenshots/4-urban.jpg) |
-| Team Deathmatch on Urban | Team Deathmatch on Urban |
+| ![Team Deathmatch on Urban](docs/screenshots/3-urban.jpg) | ![Ghost Assault on Ghost Storage](docs/screenshots/7-ghost-assault.jpg) |
+| Team Deathmatch on Urban | Ghost Assault on Ghost Storage |
 | ![Operative select](docs/screenshots/5-operative.jpg) | ![Armory](docs/screenshots/6-armory.jpg) |
 | Operatives | Armory |
-| ![Ghost Assault on Ghost Storage](docs/screenshots/7-ghost-assault.jpg) | |
-| Ghost Assault on Ghost Storage | |
 
 ## What is in it
 
