@@ -1,0 +1,10 @@
+# Voice lines that name a PC key or the mouse (b49, user: "do not play voice lines that reference the pc controls").
+# Found by transcribing every decoded voice sample (tools/audio/vo_asr.py: faster-whisper base.en, int8, on the decoded
+# PCM of the voice bank) and reading the transcripts for press / key / mouse / click / button / Shift / Ctrl / Space / Tab.
+# Checked: all 2,182 lines of the voice bank, the UI and intel banks (b49, 2026-11-05). Only these three name a key; the other
+# hits were false ('Press this advantage', 'impressive', 'motor control', 'Site B' heard as 'Type E').
+# engine/src/audio.h VO_PC_ONLY lists the same names: those lines are never played (by name or by prefix).
+# name                                 transcript
+sh_tut_operator_start                  Press E to connect to the Firearms testing program.
+sk_tut_operator_camo_start             Press Q to activate the thermoptic camo.
+sk_tut_operator_skillsync_start        Approach your teammate and press E to download a skill.

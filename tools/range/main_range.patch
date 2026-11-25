@@ -1,0 +1,145 @@
+--- a/engine/src/main.c
++++ b/engine/src/main.c
+@@ -19,6 +19,8 @@
+ #include "weapon.h"
+ #include "hud_game.h"
+ #include "menu.h"
++#include "range.h"
++static int nbot_full;   // the bots made at start; maps with practice targets (range.h) run with none
+ 
+ int _newlib_heap_size_user = 112 * 1024 * 1024;
+ #define VDIR "ux0:data/gitsfa/"
+@@ -328,6 +330,7 @@
+ 	sprintf(p, VDIR "%s.gmm", MAPS[mi].stem); r = minimap_load(p); logp("minimap: %s\n", r < 0 ? "none" : "ok");
+ 	sprintf(p, VDIR "%s.glut", MAPS[mi].stem); r = grade_load(p); logp("colour grading: %s\n", r < 0 ? "none (neutral)" : "map LUT");
+ 	loading_progress(0.88f, "LOADING LIGHTING"); sprintf(p, VDIR "%s.glgt", MAPS[mi].stem); r = light_load(p); logp("light samples: %d (map average %.2f %.2f %.2f)\n", r, lg_avg[0], lg_avg[1], lg_avg[2]);
++	{ int rr = range_load(VDIR, MAPS[mi].stem); if (rr) logp("range: %d practice targets (%s.grange)%s\n", rr, MAPS[mi].stem, rr < 0 ? " FAILED" : ""); }
+ 	tex_check(0);
+ 	return 0;
+ }
+@@ -659,6 +662,7 @@
+ 				for (int i = 0; i < nbot; i++) logp("  bot %d (%s) spawns at %.0f %.0f %.0f, path of %d points\n", i, chrt[bots[i].ct].name, bots[i].pl.pos.x, bots[i].pl.pos.y, bots[i].pl.pos.z, bots[i].npath); }
+ 		}
+ 	}
++	nbot_full = nbot; if (range_active()) nbot = 0;
+ 	float pos[3], yaw = 0, pitch = 0, P[16], V[16], MVP[16], fwd[3];
+ 	int fly = 0;
+ 	persp(P, 70 * 3.14159f / 180, 960.0f / 544, 10, 12000);
+@@ -752,6 +756,7 @@
+ 			if (autoplay && md_ok && tour_i > 0) { static const char *TW[8] = { "m4a1", "scar", "acr", "mp5", "kriss", "l118", "870", "m249" }; loadout_load(TW[tour_i % 8], (tour_i & 1) ? "mateba" : "seburom5"); }
+ 			else if (vm_ok) { WP.sw_to = wcur; weapon_finish_switch(); }
+ 			aw_reset(&aw);
++			nbot = range_active() ? 0 : nbot_full;
+ 			if (bots_ok && nspawn) { BotTarget T = { pl.pos, pl.vel, 1 }; bots_pick_chars(); for (int i = 0; i < nbot; i++) { bots[i].team = i < n_allies ? 0 : 1; bots[i].kills = bots[i].deaths = 0; bot_spawn(&bots[i], &T); } spect_bot = 0;
+ 				logp("bots:"); for (int i = 0; i < nbot; i++) logp(" %s", chrt[bots[i].ct].name); logp("\n"); }
+ 			tex_rechecked = 0; light_at(pl.pos.x, pl.pos.y, pl.pos.z + 20, vm_lit);
+@@ -818,9 +823,9 @@
+ 			tsec += dt;
+ 			int fighting = 0;
+ 			if (bots_ok) { // fight: turn to the nearest bot in sight and shoot it (the walk waits)
+-				V3 eye = v3(pl.pos.x, pl.pos.y, pl.pos.z + P_EYE); int tb = bots_visible_nearest(eye, 2600);
+-				if (tb >= 0) {
+-					V3 c = bots[tb].chest; float dx = c.x - eye.x, dy = c.y - eye.y, dz = c.z - eye.z, hd = sqrtf(dx * dx + dy * dy);
++				V3 eye = v3(pl.pos.x, pl.pos.y, pl.pos.z + P_EYE); int tb = bots_visible_nearest(eye, 2600); V3 rc_ = eye; int rt_ = tb < 0 ? range_visible_nearest(eye, 7000, &rc_) : -1;
++				if (tb >= 0 || rt_ >= 0) {
++					V3 c = tb >= 0 ? bots[tb].chest : rc_; float dx = c.x - eye.x, dy = c.y - eye.y, dz = c.z - eye.z, hd = sqrtf(dx * dx + dy * dy);
+ 					float wy = atan2f(dy, dx), wp = atan2f(dz, hd), ey = wrap_pi(wy - pl.yaw);
+ 					pl.yaw += ey * fminf(1, 9 * dt); pitch += (wp - pitch) * fminf(1, 9 * dt);
+ 					aim = 1; sprint = 0; mx = my = 0; jump = 0; trig = fabsf(ey) < 0.06f && fabsf(wp - pitch) < 0.06f && reload_t <= 0;
+@@ -967,7 +972,10 @@
+ 							V3 dir = v3(cosf(yy) * cosf(pp), sinf(yy) * cosf(pp), sinf(pp));
+ 							int mat = 0; V3 n; float dist = raycast(eye, dir, 15000, &mat, &n);
+ 							float bt = 0; int bh = 0, bi = bots_ok ? bots_hit_test(eye, dir, dist > 0 ? dist : 15000, &bt, &bh) : -1;
+-							if (bi >= 0) { if (nph < 24) { PHit *q = &ph[nph++]; q->bi = bi; q->head = bh; q->dmg = bh ? D->dmg_h : D->dmg; q->p = vadd(eye, vmul(dir, bt)); q->d = dir; q->icon = D->icon; } }
++							float rt_ = 0; int rh_ = 0, ri_ = range_hit_test(eye, dir, bi >= 0 ? bt : dist > 0 ? dist : 15000, &rt_, &rh_);
++							if (ri_ >= 0) { int dead_ = range_damage(ri_, rh_ ? D->dmg_h : D->dmg, rh_, vadd(eye, vmul(dir, rt_)), dir); phits++; if (rh_) pheads++; hit_marker = 0.2f;
++								if (dead_) kill_marker = 0.7f; else if (!snd) { play(rh_ ? "ui_hit_heatshot2" : "ui_hit_common_", rh_ ? 210 : 190); snd = 1; } }
++							else if (bi >= 0) { if (nph < 24) { PHit *q = &ph[nph++]; q->bi = bi; q->head = bh; q->dmg = bh ? D->dmg_h : D->dmg; q->p = vadd(eye, vmul(dir, bt)); q->d = dir; q->icon = D->icon; } }
+ 							else if (dist > 0) {
+ 								V3 hp = vadd(eye, vmul(dir, dist)); hits_by_mat[mat]++;
+ 								if (!snd) { float rx_ = sinf(pl.yaw), ry_ = -cosf(pl.yaw); float pan = ((hp.x - eye.x) * rx_ + (hp.y - eye.y) * ry_) / (dist + 1);
+@@ -1020,6 +1028,7 @@
+ 						if (nph < 24) { PHit *q = &ph[nph++]; q->bi = b; q->head = 0; q->dmg = 160 * powf(1 - d_ / R, 0.9f) + 10; q->p = bb->chest; q->d = vmul(e, 1 / (d_ + 1)); q->icon = wsl[WS_GRENADE].ok ? wdef[wsl[WS_GRENADE].def].icon : 41; } }
+ 					{ V3 pc = v3(pl.pos.x, pl.pos.y, pl.pos.z + 100), e = vsub(pc, c); float d_ = sqrtf(vdot(e, e));
+ 					  if (d_ < R && pdead_t <= 0 && bot_los(c, pc)) { self_dmg += 120 * powf(1 - d_ / R, 1.2f); self_dmg_dir = atan2f(-e.y, -e.x); } }
++					if (range_blast(c, R, 160)) kill_marker = 0.7f;
+ 					logp("  grenade exploded at %.0f %.0f %.0f\n", c.x, c.y, c.z);
+ 				}
+ 			}
+@@ -1062,7 +1071,7 @@
+ 			yaw = pl.yaw; pos[0] = pl.pos.x; pos[1] = pl.pos.y; pos[2] = pl.pos.z + P_EYE;
+ 		}
+ 		if (pitch > 1.5f) pitch = 1.5f; if (pitch < -1.5f) pitch = -1.5f;
+-		float vpitch = pitch; int spect = autoplay && map_t < TOUR_SPECT && bots_ok && !fly;
++		float vpitch = pitch; int spect = autoplay && map_t < TOUR_SPECT && bots_ok && nbot > 0 && !fly;
+ 		if (spect) { // third-person camera orbiting one bot (switches when it has been dead a while)
+ 			if (bots[spect_bot].state == BS_DEAD && bots[spect_bot].dead_t > 2.5f)
+ 				for (int k = 1; k < nbot; k++) { int c = (spect_bot + k) % nbot; if (bots[c].state != BS_DEAD) { spect_bot = c; logp("  camera: now following bot %d\n", c); break; } }
+@@ -1097,10 +1106,11 @@
+ 				}
+ 			}
+ 		}
++		range_update(dt, v3(pos[0], pos[1], pos[2]));
+ 		if (cool_t >= 0) { cool_t -= dt; if (cool_t < 0) { cool_t = -1; voice_play("d_op_ready_optical", 190, 0); } }
+ 		if (camo_t > 0 && camo_t - dt <= 0) play("cloaking_end", 200); camo_t -= dt;
+ 		// match flow (until the menus take over): announcer, last-minute music, end of match after 10 minutes
+-		if (map_audio_pending) { map_audio_pending = 0; amb_for_map(VDIR, MAPS[cur_map].stem, 170); music_play(VDIR "bgm_in_game_dm_round.gstr", 0, 190, 300); voice_play("d_aramaki_tdm_gamestart", 230, 0); play("ui_game_start_mode", 200); }
++		if (map_audio_pending) { map_audio_pending = 0; amb_for_map(VDIR, MAPS[cur_map].stem, 170); if (!range_active()) { music_play(VDIR "bgm_in_game_dm_round.gstr", 0, 190, 300); voice_play("d_aramaki_tdm_gamestart", 230, 0); play("ui_game_start_mode", 200); } }
+ 		if (score_limit > 0 && match_t > 0.01f && match_over_t <= 0 && (score_l >= score_limit * 100 || score_r >= score_limit * 100)) { match_t = 0.01f; logp("  score limit reached\n"); }
+ 		if (match_t > 60 && match_t - dt <= 60) { tw_t = 0; play("ui_crisis", 190); }
+ 		tw_t += dt;
+@@ -1123,13 +1133,14 @@
+ 				amb_stop(0, 800); amb_stop(1, 800); music_play(VDIR "bgm_result.gstr", 1, 180, 500); play("ui_result", 200);
+ 				menu_fe_load(); menu_results_open(&R); phase = PH_RESULTS; grade_identity(); logp("  results: %s %d - %d, %d kills, %d deaths\n", end_result == 0 ? "victory" : end_result == 1 ? "defeat" : "draw", R.score[0], R.score[1], m_pkills, m_pdeaths);
+ 			} } }
+-		streak_t -= dt; notify_t += dt; if (match_t > 0 && (match_len > 0 || autoplay)) match_t -= dt;
++		streak_t -= dt; notify_t += dt; if (match_t > 0 && (match_len > 0 || autoplay) && (!range_active() || ap_finish)) match_t -= dt;
+ 		for (int k = 0; k < HUD_DMG; k++) dmg_tt[k] -= dt; for (int k = 0; k < nfeed; k++) feed[k].t += dt;
+ 		while (nfeed > 0 && feed[0].t > 7) { memmove(feed, feed + 1, sizeof(HudKill) * (nfeed - 1)); nfeed--; }
+ 		for (int i = 0; i < nbot && i < NBOT_MAX; i++) { if (bots[i].flash_t > 0) bot_ping[i] = 1.5f; else bot_ping[i] -= dt; }
+ 		hurt_flash *= expf(-2.5f * dt); dmg_ind -= dt; hit_marker -= dt; kill_marker -= dt; pflash -= dt; dmg_snd_cd -= dt; regen_cd -= dt;
+ 		if (regen_cd <= 0 && php > 0 && php < 100) { php += 15 * dt; if (php > 100) php = 100; }
+ 		if (autoplay && vm_ok && WSC->res < WD->mag) WSC->res = WD->res;
++		if (vm_ok && range_refill(&WSC->ammo, &WSC->res, WD->mag)) logp("  range: ammo refilled (%d in reserve)\n", WSC->res);
+ 		if (pdead_t > 0) {
+ 			pdead_t -= dt; float k = fminf(1, (3.5f - pdead_t) / 0.6f); pos[2] = pl.pos.z + P_EYE - 110 * k;
+ 			if (pdead_t <= 0) { // respawn at the spawn point farthest from the living bots
+@@ -1183,7 +1194,7 @@
+ 			glDisable(GL_CULL_FACE); md_mesh0 = 2; model_draw(&wsl[WS_GRENADE].m, GM, gren_pose, ld, tint, fog); md_mesh0 = 0; glEnable(GL_CULL_FACE);
+ 		}
+ 		{ float R_[3] = { sinf(yaw), -cosf(yaw), 0 }, U_[3] = { R_[1] * fwd[2] - R_[2] * fwd[1], R_[2] * fwd[0] - R_[0] * fwd[2], R_[0] * fwd[1] - R_[1] * fwd[0] };
+-		  fx_draw(MVP, pos, R_, U_); glEnable(GL_CULL_FACE); glEnable(GL_DEPTH_TEST); }
++		  range_draw(MVP, pos, R_, U_); fx_draw(MVP, pos, R_, U_); glEnable(GL_CULL_FACE); glEnable(GL_DEPTH_TEST); }
+ 		if (!fly && (nwm || vm_ok)) {
+ 			// ---- first-person weapon (weapon space: x forward, y left, z up; camera space: x right, y up, -z forward)
+ 			glClear(GL_DEPTH_BUFFER_BIT);
+@@ -1243,7 +1254,8 @@
+ 				H_.cool = cool_t >= 0 ? cool_t / 20.f : -1; H_.skill_icon = 8; H_.key = NULL;
+ 				H_.scoreL = score_l; H_.scoreR = score_r; H_.goal = 10000; H_.time_s = (int)(match_t + 0.999f); H_.time_warn = match_t < 60;
+ 				H_.ads = ads; H_.spread = 6 + spread * 14 + hs * 10;
+-				{ V3 eye = v3(pos[0], pos[1], pos[2]), dir = v3(fwd[0], fwd[1], fwd[2]); float bt_; int bh_; H_.aim_red = bots_ok && bots_hit_test(eye, dir, 6000, &bt_, &bh_) >= 0; }
++				{ V3 eye = v3(pos[0], pos[1], pos[2]), dir = v3(fwd[0], fwd[1], fwd[2]); float bt_; int bh_; H_.aim_red = bots_ok && bots_hit_test(eye, dir, 6000, &bt_, &bh_) >= 0;
++				  if (range_active()) { float wd_ = raycast(eye, dir, 9000, NULL, NULL); if (range_aim(eye, dir, wd_ > 0 ? wd_ : 9000) >= 0) H_.aim_red = 1; } }
+ 				H_.hit_t = hit_marker; H_.kill_t = kill_marker;
+ 				{ const WSlot *Wd = WP.quick_from >= 0 ? &wsl[WP.quick_from] : WSC;   // quick knife / grenade: keep showing the gun's counter
+ 				  if (vm_ok && Wd->ok) { H_.mag = Wd->ammo; H_.reserve = Wd->res; H_.cap = wdef[Wd->def].mag; H_.wname = wdef[Wd->def].name; } else { H_.mag = 0; H_.reserve = 0; H_.cap = 0; H_.wname = NULL; } }
+@@ -1268,9 +1280,11 @@
+ 					if (b->team == 0) { H_.blip[H_.nblip].x = b->pl.pos.x; H_.blip[H_.nblip].y = b->pl.pos.y; H_.blip[H_.nblip].yaw = b->pl.yaw; H_.blip[H_.nblip].type = 2; H_.nblip++; continue; }
+ 					int seen = bot_los(v3(pos[0], pos[1], pos[2]), b->chest);
+ 					if (seen || bot_ping[i] > 0) { H_.blip[H_.nblip].x = b->pl.pos.x; H_.blip[H_.nblip].y = b->pl.pos.y; H_.blip[H_.nblip].yaw = b->pl.yaw; H_.blip[H_.nblip].type = seen ? 0 : 1; H_.nblip++; } }
++				if (range_active()) { H_.nfeed = 0; H_.nchip = 0; H_.mm_tex = 0; H_.notify = NULL; H_.ntag = 0; H_.nblip = 0; }   // the range shows none of these
+ 				hud_begin();
+ 				if (scoped) { int ri = (int)WSC->scope[0]; float a = fminf(1, (ads - 0.85f) / 0.1f); scope_overlay(ri >= 0 && ri < VM.ntex ? VM.tex[ri] : 0, ri + 1 < VM.ntex ? VM.tex[ri + 1] : 0, a); H_.ads = 1; H_.spread = 0; }
+ 				hud_game_draw(&H_, now / 1e6f);
++				range_hud(MVP, now / 1e6f);
+ 				if (pdead_t > 0 && HG.white >= 0 && HG.screen >= 0) { float A[6] = { 960, 0, 0, 0, 544, 0 }, dm[4] = { 0.25f, 0.02f, 0.03f, 0.35f * fminf(1, (3.5f - pdead_t) / 0.5f) }; hud_img(HG.white, HG.screen, A, dm, HUD_Z4, -1, 1); }
+ 				hud_end();
+ 			}
+@@ -1307,6 +1321,7 @@
+ 					logp("  player hp %.0f kills %d deaths %d | bots:", php, kills, pdeaths);
+ 					for (int i = 0; i < nbot; i++) { Bot *b = &bots[i]; const Model *M = &chrt[b->ct].m; logp(" %d:%s %s %.0f %s%s%s (%.0f %.0f)", i, chrt[b->ct].name, bot_state_name[b->state], b->hp > 0 ? b->hp : 0, b->an.base >= 0 ? M->clip[b->an.base].name : "-", b->an.act >= 0 ? "+" : "", b->an.act >= 0 ? M->clip[b->an.act].name : "", b->pl.pos.x, b->pl.pos.y); }
+ 					logp("\n"); }
++			if (range_active()) { char rs_[160]; range_status(rs_, sizeof(rs_)); logp("  %s\n", rs_); }
+ 			if (audio_late) logp("  audio: %d late grains so far, worst gap %d us, worst mix %d us\n", audio_late, audio_worst_us, audio_mix_us);
+ 			frames = 0; t0 = now;
+ 		}

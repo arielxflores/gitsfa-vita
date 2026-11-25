@@ -1,0 +1,13 @@
+# Public source release (git archive / tools/databuilder/public_tree.sh): everything below is game data, converted game
+# data, footage or renders of either, and stays out of the published tree. (The repository history holds them too:
+# publish a fresh tree made by public_tree.sh, never this history.)
+build/** export-ignore
+tools/audio/ref/** export-ignore
+tools/audio/libadpcm.so export-ignore
+tools/minimap/registration.json export-ignore
+tools/skills/out/** export-ignore
+tools/skills/host/skview/out/** export-ignore
+tools/tank/compare/** export-ignore
+tools/vision/ref/** export-ignore
+tools/devpaths.sh export-ignore
+tools/databuilder/check/make_extract_list.py export-ignore
