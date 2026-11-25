@@ -10,6 +10,21 @@ game with the data builder (below). No code of the original game is used: the ex
 This is version **1.0**, the first release. It has been played on one PS Vita. Multiplayer has only been tested with one Vita and
 a computer playing the second player, so please expect problems there and report them.
 
+## Screenshots
+
+Taken on a PS Vita (the line at the top left of the match pictures is from the automatic test run, not the normal game).
+
+| | |
+|---|---|
+| ![Title screen](docs/screenshots/1-title.jpg) | ![Main menu](docs/screenshots/2-menu.jpg) |
+| Title screen | Main menu |
+| ![Team Deathmatch on Urban](docs/screenshots/3-urban.jpg) | ![Team Deathmatch on Urban](docs/screenshots/4-urban.jpg) |
+| Team Deathmatch on Urban | Team Deathmatch on Urban |
+| ![Operative select](docs/screenshots/5-operative.jpg) | ![Armory](docs/screenshots/6-armory.jpg) |
+| Operatives | Armory |
+| ![Ghost Assault on Ghost Storage](docs/screenshots/7-ghost-assault.jpg) | |
+| Ghost Assault on Ghost Storage | |
+
 ## What is in it
 
 - 17 maps: 13 battlefields and the four training rooms (tutorial, shooting range).

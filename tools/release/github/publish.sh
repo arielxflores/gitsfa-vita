@@ -53,6 +53,7 @@ read -r -p "Go ahead? [y/N] " ok
 [[ "$ok" == [yY] ]] || { echo "stopped, nothing was published"; exit 0; }
 
 mkdir -p "$DEST"; tar xzf "$SRC" -C "$DEST" --strip-components=1
+mkdir -p "$DEST/docs/screenshots"; cp "$HERE"/screenshots/*.jpg "$DEST/docs/screenshots/"   # (the README shows them; your own pictures from the Vita)
 cd "$DEST"
 git init -q -b main
 git config user.name "$LOGIN"; git config user.email "$ID+$LOGIN@users.noreply.github.com"
