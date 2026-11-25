@@ -30,7 +30,7 @@ Taken on a PS Vita (the line at the top left of the match pictures is from the a
 - The 12 operatives with their skills (Tier 1 / Tier 2, SkillSync), outfits and the 50 weapons of the armory.
 - The front end: operative, armory, custom match, profile, options; touch works in every menu.
 - Multiplayer rooms for up to 8 players: AD-HOC, LAN (same Wi-Fi) and INTERNET with a room code.
-- 60 frames a second on most maps.
+- 60 frames a second in game on maps.
 
 ## What you need
 
